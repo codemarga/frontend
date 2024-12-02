@@ -61,37 +61,23 @@ export default function ProblemPage() {
   const [language, setLanguage] = useState<string>("javascript");
   const [activeTab, setActiveTab] = useState<string>("code");
 
-  async function runCode(code: any, language: any) {
-    try {
-      const response = await axios.post("/api/execute-code", {
-        code: code,
-        language: language,
-      });
+  const [ter_res,setTerRes] = useState("check this terminal")
 
-      // Assuming the response contains terminal output
-      console.log("Terminal Output:", response.data.output);
-    } catch (error) {
-      console.error("Error executing code:", error);
-    }
-  }
 
   const RunCode = async (code: any, language: any) => {
+    console.log("hello")
     setActiveTab("terminal");
     try {
+      console.log(code , language)
       const response = await axios.post(
         process.env.NEXT_PUBLIC_RUNCODE_URL!,
-        {
-          code: code,
-          language: language,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      console.log("response", response.data);
+        { code, language },
+        { headers: { "Content-Type": "application/json" } }
+    );
+      console.log("response", response.data.output);
+      setTerRes(response.data.output)
     } catch (error: any) {
+      console.log("eror")
       console.log(error.message);
     }
   };
@@ -103,6 +89,7 @@ export default function ProblemPage() {
   function handleLanguageChange(selected: string): void {
     setLanguage(selected);
   }
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -208,10 +195,10 @@ export default function ProblemPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Terminal</CardTitle>
-                    <CardDescription>view teminal</CardDescription>
+                    <CardDescription>Check Your Terminal</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <p> check your terminal</p>
+                    <p> {ter_res}</p>
                   </CardContent>
                 </Card>
               </TabsContent>
