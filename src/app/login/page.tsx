@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -136,7 +137,9 @@ function Login() {
                 </div>
               </div>
               <div className="relative mt-2 max-w-xs mx-auto">
+
                 <button
+                  
                   className=" gsi-material-button"
                   style={{ width: "320px" }}
                 >
