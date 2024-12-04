@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +27,7 @@ import { IoCloudUploadSharp } from "react-icons/io5";
 import axios from "axios";
 
 // Problem Details
-const problemDetails = {
+const initialproblemDetails = {
   id: 1,
   title: "Two Sum",
   description:
@@ -47,6 +47,8 @@ const problemDetails = {
   ],
 };
 
+
+
 // Language Map
 const languageMap: Record<string, string> = {
   python: "python",
@@ -60,6 +62,7 @@ export default function ProblemPage() {
   const [code, setCode] = useState("// Write your code here");
   const [language, setLanguage] = useState<string>("javascript");
   const [activeTab, setActiveTab] = useState<string>("code");
+  const [problemDetails, setProblemDetails] = useState(initialproblemDetails);
 
   const [ter_res,setTerRes] = useState("check this terminal")
 
@@ -81,6 +84,22 @@ export default function ProblemPage() {
       console.log(error.message);
     }
   };
+
+  useEffect(() => {
+  const fetchProblemDetails = async () => {
+    try {
+      const response = await axios.get(
+        process.env.NEXT_PUBLIC_PROBLEMDETAILS_URL!,
+        {params: {id: params.id}},
+    );
+      console.log("response", response.data);
+      setProblemDetails(response.data);
+    } catch (error: any) {
+      console.log(error.message);
+    }
+  };
+  //fetchProblemDetails()
+}, [problemDetails]);
 
   function handleEditorChange(value: string | undefined): void {
     setCode(value || "");
@@ -126,7 +145,7 @@ export default function ProblemPage() {
               </ul>
             </CardContent>
           </Card>
-          <div>
+          <div className="w-full ml-10">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="mb-4">
                 <TabsTrigger value="code">Code</TabsTrigger>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import {FaArrowDown,FaPrescription} from 'react-icons/fa';
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -48,10 +49,44 @@ const problems = [
   },
 ];
 
+
+
 export default function ProblemListPage() {
   return (
     <div className="min-h-screen bg-background">
       <main className="container mx-auto px-4 py-8">
+      <div className="flex flex-wrap gap-3 mb-6">
+          {['Array', 'String', 'Hash Table', 'Dynamic Programming', 'Math', 'Sorting', 'Greedy'].map((topic, index) => (
+            <span key={index} className="bg-gray-200 px-3 py-1 rounded-full text-sm text-gray-700 hover:bg-gray-300">
+              {topic} <span className="text-gray-500 ml-1">{Math.floor(Math.random() * 1000)}</span>
+            </span>
+          ))}
+          <button className="bg-gray-200 px-3 py-1 rounded-full flex items-center text-sm text-gray-700 hover:bg-gray-300">
+            Expand <FaArrowDown className="h-4 w-4 ml-1" />
+          </button>
+        </div>
+
+        <div className="flex flex-wrap gap-3 mb-6">
+          {['All Topics', 'Algorithms', 'Database', 'Shell', 'Concurrency', 'JavaScript'].map((topic, index) => (
+            <button key={index} className="bg-gray-200 px-3 py-1 rounded-full text-sm text-gray-700 hover:bg-gray-300">
+              {topic}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex space-x-4 items-center mb-6">
+          {['Lists', 'Difficulty', 'Status', 'Tags'].map((filter, index) => (
+            <button key={index} className="bg-gray-200 px-3 py-1 rounded-full flex items-center text-sm text-gray-700 hover:bg-gray-300">
+              {filter} <FaArrowDown className="h-4 w-4 ml-1" />
+            </button>
+          ))}
+          <input className="flex-grow bg-gray-200 px-3 py-2 rounded-full text-sm text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Search questions" />
+          <button className="bg-blue-500 p-2 rounded-full text-white hover:bg-blue-400">
+            <FaPrescription className="h-5 w-5" />
+          </button>
+          <button className="bg-blue-400 px-4 py-2 rounded-full text-white font-semibold hover:bg-blue-300">Pick One</button>
+        </div>
+
         <h1 className="text-3xl font-bold mb-6">Problem List</h1>
         <Table>
           <TableHeader>
