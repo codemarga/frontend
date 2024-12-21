@@ -15,6 +15,7 @@ export function DashboardHeader() {
     { href: "/contest", label: "Contest" },
     { href: "/leaderboard", label: "Leaderboard" },
     { href: "/groups", label: "Groups" },
+    { href: "/signup", label: "Signup"},
   ];
 
   return (
