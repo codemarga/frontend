@@ -47,12 +47,17 @@ export default function LeaderboardPage() {
       setLoading(true);
       try {
         const data = [
-          { rank: 1, name: "Alice Johnson", score: 950, country: "USA", timestamp: "2024-12-12T10:15:30Z" },
-          { rank: 2, name: "Bob Smith", score: 900, country: "Canada", timestamp: "2024-12-10T14:20:10Z" },
-          { rank: 3, name: "Carlos Vega", score: 870, country: "Spain", timestamp: "2024-12-11T08:50:22Z" },
-          { rank: 4, name: "Diana Kim", score: 860, country: "South Korea", timestamp: "2024-12-09T12:35:50Z" },
-          { rank: 5, name: "Ethan Wang", score: 830, country: "China", timestamp: "2024-12-12T15:40:00Z" },
+          { rank: 1, name: "Safal", score: 980, country: "Nepal", timestamp: "2024-12-13T09:30:00Z" },
+          { rank: 2, name: "Aayush", score: 970, country: "Nepal", timestamp: "2024-12-13T11:15:00Z" },
+          { rank: 3, name: "Awasthi", score: 960, country: "Nepal", timestamp: "2024-12-12T14:50:00Z" },
+          { rank: 4, name: "Swarnim", score: 950, country: "Nepal", timestamp: "2024-12-13T16:20:00Z" },
+          { rank: 5, name: "Alice Johnson", score: 940, country: "USA", timestamp: "2024-12-12T10:15:30Z" },
+          { rank: 6, name: "Bob Smith", score: 900, country: "Canada", timestamp: "2024-12-10T14:20:10Z" },
+          { rank: 7, name: "Carlos Vega", score: 870, country: "Spain", timestamp: "2024-12-11T08:50:22Z" },
+          { rank: 8, name: "Diana Kim", score: 860, country: "South Korea", timestamp: "2024-12-09T12:35:50Z" },
+          { rank: 9, name: "Ethan Wang", score: 830, country: "China", timestamp: "2024-12-12T15:40:00Z" },
         ];
+        
         setLeaderboardData(data);
       } catch (error) {
         console.error("Failed to fetch leaderboard data:", error);
