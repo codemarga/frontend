@@ -1,0 +1,98 @@
+/* src/styles/leaderboard.css */
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f9f9f9;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .leaderboard-container {
+    padding: 40px;
+    max-width: 900px;
+    margin: auto;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    animation: fadeIn 0.8s ease-in;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  h1 {
+    text-align: center;
+    color: #333;
+    font-size: 2rem;
+    margin-bottom: 20px;
+    font-weight: bold;
+  }
+  
+  .leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  }
+  
+  .leaderboard-table th,
+  .leaderboard-table td {
+    padding: 15px 25px;
+    text-align: left;
+    font-size: 1rem;
+    color: #555;
+  }
+  
+  .leaderboard-table th {
+    background-color: #f0f0f0;
+    color: #333;
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+  
+  .leaderboard-table td {
+    background-color: #ffffff;
+  }
+  
+  .leaderboard-table tr:nth-child(even) td {
+    background-color: #f9f9f9;
+  }
+  
+  .leaderboard-table tr:hover td {
+    background-color: #eaeaea;
+    cursor: pointer;
+  }
+  
+  .leaderboard-table td,
+  .leaderboard-table th {
+    transition: background-color 0.3s ease;
+  }
+  
+  /* Highlight the top rank with a subtle accent */
+  .leaderboard-table tr:nth-child(1) td {
+    font-weight: bold;
+    color: #333;
+    background-color: #e0f7fa; /* Light blue for 1st place */
+  }
+  
+  /* Responsive Design */
+  @media screen and (max-width: 768px) {
+    .leaderboard-container {
+      padding: 20px;
+    }
+  
+    .leaderboard-table th,
+    .leaderboard-table td {
+      padding: 12px 18px;
+      font-size: 0.9rem;
+    }
+  }
+  
