@@ -1,0 +1,40 @@
+.groups-container {
+    background-color: #f9f9fb; /* Light background */
+  }
+  
+  .create-group-button {
+    background-color: #6c63ff; /* Purple button */
+    color: white;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+  }
+  
+  .create-group-button:hover {
+    background-color: #5848c2;
+  }
+  
+  .group-cards .group-card {
+    background-color: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 16px;
+    border-radius: 8px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .group-cards .group-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  .group-card h2 {
+    color: #4a4a8e;
+    font-weight: bold;
+  }
+  
+  .group-members {
+    font-size: 14px;
+    color: #757575;
+  }
+  
