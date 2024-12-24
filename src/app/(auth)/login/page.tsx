@@ -63,6 +63,11 @@ function Login() {
     }
   };
 
+  const handleSignIn = async () => {
+    router.push("/api/auth/signin");
+    
+  };
+
   return (
     <div className="relative w-full min-h-screen overflow-hidden bg-[#f8f3f0] ">
       <div
@@ -79,9 +84,7 @@ function Login() {
             className="absolute left-[30px] top-[13%] rounded-l-3xl"
           />
           <div className="absolute bottom-[15%] left-[10%] flex flex-col ">
-            <h1
-              className={` text-[36px] font-bold text-[#1f1f1f] pb-2`}
-            >
+            <h1 className={` text-[36px] font-bold text-[#1f1f1f] pb-2`}>
               Welcome
             </h1>
             <p className={`text-[16px] text-[#1f1f1f]`}>
@@ -137,12 +140,7 @@ function Login() {
                 </div>
               </div>
               <div className="relative mt-2 max-w-xs mx-auto">
-
-                <button
-                  
-                  className=" gsi-material-button"
-                  style={{ width: "320px" }}
-                >
+                <button onClick={handleSignIn} className="gsi-material-button">
                   <div className="gsi-material-button-state"></div>
                   <div className="gsi-material-button-content-wrapper">
                     <div className="gsi-material-button-icon">
@@ -150,6 +148,7 @@ function Login() {
                         version="1.1"
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 48 48"
+                        xmlnsXlink="http://www.w3.org/1999/xlink"
                         style={{ display: "block" }}
                       >
                         <path
