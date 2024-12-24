@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import axios from 'axios';
 
 export async function POST(req: NextRequest) {
@@ -15,14 +15,13 @@ export async function POST(req: NextRequest) {
     );
 
     console.log(' API response:', response.data);
-
-    const res = NextResponse.json({ data: response.data });
-    res.cookies.set('jwt', response.data.refresh, {
-      httpOnly: true,
-    });
-    console.log('Response:', req.cookies.get('jwt'));
-
-    return res;
+    return new Response(
+      JSON.stringify(response.data),
+      {
+        status: response.status,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error('Axios error:', error.response?.data || error.message);
@@ -38,11 +37,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.error('Error in POST handler:', error.message || error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error in POST handler:', errorMessage);
     return new Response(
       JSON.stringify({
         error: 'Error in POST handler',
-        details: error.message || 'Unknown error',
+        details: error instanceof Error ? error.message : 'Unknown error',
       }),
       {
         status: 500,

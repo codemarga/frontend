@@ -3,9 +3,7 @@ import type { NextRequest } from 'next/server';
 import { auth } from '@/auth';
 
 export async function middleware(request: NextRequest) {
-    const jwt = request.cookies.get('jwt');
     
-    console.log(jwt)
     console.log("middleware");
     const session = await auth();
     console.log(session);
@@ -20,7 +18,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/login', request.nextUrl));
     }
     
-
+    /*
     if (session.user && !jwt?.value) {
         console.log("done")
         const username = session.user.name;
@@ -47,6 +45,7 @@ export async function middleware(request: NextRequest) {
             console.error("Error in middleware POST request:", error);
         }
     }
+        */
 
     return NextResponse.next();
 }
