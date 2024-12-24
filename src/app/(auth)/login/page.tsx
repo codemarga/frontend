@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import axios from "axios";
-import "./login.css";
 import { Roboto } from "next/font/google";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -15,24 +15,17 @@ const roboto = Roboto({
   subsets: ["latin"],
 });
 
+/** LOGIN COMPONENT */
 function Login() {
   const router = useRouter();
 
-  const [user, setUser] = useState({
-    email: "",
-    password: "",
-  });
-
+  const [user, setUser] = useState({ email: "", password: "" });
   const [buttonDisabled, setButtonDisabled] = useState(true);
-  useEffect(() => {
-    if (user.email !== "" && user.password !== "") {
-      setButtonDisabled(false);
-    } else {
-      setButtonDisabled(true);
-    }
-  }, [user]);
-
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setButtonDisabled(user.email === "" || user.password === "");
+  }, [user]);
 
   const handleChanges = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUser({ ...user, [e.target.name]: e.target.value });
@@ -40,24 +33,40 @@ function Login() {
 
   const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
+    setLoading(true);
+
     try {
-      setLoading(true);
-      console.log(user);
-      const formdata = new FormData();
-      formdata.append("email", user.email);
-      formdata.append("password", user.password);
       const response = await axios.post(
         process.env.NEXT_PUBLIC_LOGIN_URL!,
-        formdata
+        {
+          email: user.email,
+          password: user.password,
+        },
+        {
+          headers: { "Content-Type": "application/json" },
+        }
       );
-      document.cookie = `jwt=${response.data.jwt}; path=/; secure; samesite=strict;`;
-      console.log(response);
-      toast.success("Login successful");
+
+      const { access, refresh } = response.data;
+      document.cookie = `access=${access}; path=/; secure; samesite=strict;`;
+      document.cookie = `refresh=${refresh}; path=/; secure; samesite=strict;`;
+
+      toast.success("Login successful!");
       router.push("/profile");
     } catch (error: any) {
-      console.log(error.message);
+      console.error(error);
 
-      toast.error(error.message);
+      if (error.response) {
+        const statusCode = error.response.status;
+        const errorMessage =
+          error.response.data?.error ||
+          (statusCode === 401
+            ? "Invalid credentials, please try again."
+            : "An error occurred. Please try again later.");
+        toast.error(errorMessage);
+      } else {
+        toast.error("Network error. Please check your connection.");
+      }
     } finally {
       setLoading(false);
     }
@@ -69,12 +78,12 @@ function Login() {
   };
 
   return (
-    <div className="relative w-full min-h-screen overflow-hidden bg-[#f8f3f0] ">
+    <div className="relative w-full min-h-screen overflow-hidden bg-[#f8f3f0]">
       <div
-        className="bg-white z-10 absolute top-[50px] left-[50px] bottom-[50px] right-[50px] flex items-start border-none border-gray-300 rounded-3xl"
+        className="bg-white z-10 absolute top-[50px] left-[50px] bottom-[50px] right-[50px] flex items-start border-gray-300 rounded-3xl"
         style={{ boxShadow: "0 5px 7px rgba(100, 100, 100, 0.5)" }}
       >
-        <div className="flex relative w-[850px] h-full ">
+        <div className="flex relative w-[850px] h-full">
           <Image
             priority={true}
             src="/sycas-logo.svg"
@@ -94,14 +103,14 @@ function Login() {
           </div>
         </div>
 
-        <div className="  bg-white h-full rounded-r-3xl flex flex-1 flex-col justify-center ">
+        <div className="bg-white h-full rounded-r-3xl flex flex-1 flex-col justify-center">
           <div className="mt-5 sm:mx-auto sm:w-full sm:max-w-sm">
-            <form className="space-y-6" action="#" method="POST">
-              <div className=" sm:mx-auto sm:w-full sm:max-w-sm flex flex-col gap-2 items-center mb-[40px] ">
+            <form className="space-y-6">
+              <div className="sm:mx-auto sm:w-full sm:max-w-sm flex flex-col gap-2 items-center mb-[40px]">
                 <h2
                   className={`${roboto.className} text-center text-[40px] font-bold leading-9 tracking-tight text-[#17c8b9]`}
                 >
-                  {loading ? "Loading..." : " Welcome Back"}
+                  {loading ? "Loading..." : "Welcome Back"}
                 </h2>
               </div>
               <FloatingLabelInput
@@ -125,7 +134,7 @@ function Login() {
                   disabled={buttonDisabled}
                   className={`${
                     buttonDisabled ? "bg-[#17c8b9]" : "bg-[#e16e28]"
-                  } flex w-full max-w-xs mx-auto justify-center rounded-md   py-3 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-[#4ae0d3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600`}
+                  } flex w-full max-w-xs mx-auto justify-center rounded-md py-3 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-[#4ae0d3]`}
                   onClick={handleSubmit}
                 >
                   Login
