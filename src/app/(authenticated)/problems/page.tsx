@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link";
 import {FaArrowDown,FaPrescription} from 'react-icons/fa';
 import { Button } from "@/components/ui/button";
@@ -10,48 +12,27 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { useEffect,useState } from "react";
+import axios from "axios";
 
-const problems = [
-  {
-    id: 1,
-    title: "Two Sum",
-    difficulty: "Easy",
-    acceptance: "45%",
-    frequency: "High",
-  },
-  {
-    id: 2,
-    title: "Reverse Integer",
-    difficulty: "Medium",
-    acceptance: "25%",
-    frequency: "Medium",
-  },
-  {
-    id: 3,
-    title: "Palindrome Number",
-    difficulty: "Easy",
-    acceptance: "50%",
-    frequency: "High",
-  },
-  {
-    id: 4,
-    title: "Container With Most Water",
-    difficulty: "Medium",
-    acceptance: "30%",
-    frequency: "Medium",
-  },
-  {
-    id: 5,
-    title: "3Sum",
-    difficulty: "Medium",
-    acceptance: "28%",
-    frequency: "High",
-  },
-];
+
+
+
 
 
 
 export default function ProblemListPage() {
+
+  const [problems, setProblems] = useState<any>([]);
+
+  useEffect ( () => {
+    const fetchProblems = async () => {
+      const response = await axios.get(process.env.NEXT_PUBLIC_PROBLEMS_URL!);
+      setProblems(response.data);
+    }
+    fetchProblems();
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <main className="container mx-auto px-4 py-8">
@@ -92,16 +73,16 @@ export default function ProblemListPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Title</TableHead>
+              <TableHead>Description</TableHead>
               <TableHead>Difficulty</TableHead>
-              <TableHead>Acceptance</TableHead>
-              <TableHead>Frequency</TableHead>
               <TableHead>Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {problems.map((problem) => (
+            {problems.length>0 ? (            problems.map((problem:any) => (
               <TableRow key={problem.id}>
                 <TableCell>{problem.title}</TableCell>
+                <TableCell>{problem.description}</TableCell>
                 <TableCell>
                   <Badge
                     className={` ${
@@ -115,15 +96,17 @@ export default function ProblemListPage() {
                     {problem.difficulty}
                   </Badge>
                 </TableCell>
-                <TableCell>{problem.acceptance}</TableCell>
-                <TableCell>{problem.frequency}</TableCell>
+                
                 <TableCell>
                   <Button asChild>
                     <Link href={`/problems/${problem.id}`}>Solve</Link>
                   </Button>
                 </TableCell>
               </TableRow>
-            ))}
+            ))):(<TableRow >
+              Loading...
+            </TableRow>)}
+
           </TableBody>
         </Table>
       </main>

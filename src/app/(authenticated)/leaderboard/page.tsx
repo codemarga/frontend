@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 import { FaSearch } from "react-icons/fa";
-import { Badge } from "@/components/ui/badge";
 import { Line, Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -28,39 +28,33 @@ ChartJS.register(
 );
 
 interface LeaderboardEntry {
-  rank: number;
-  name: string;
-  score: number;
-  country: string;
-  timestamp: string;
+  username: string;
+  points: number;
+}
+
+interface ActivityData {
+  [date: string]: number;
 }
 
 export default function LeaderboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortOrder, setSortOrder] = useState<"score" | "timestamp">("score");
   const [selectedUser, setSelectedUser] = useState<LeaderboardEntry | null>(null);
+  const [activityData, setActivityData] = useState<ActivityData>({});
 
   useEffect(() => {
     const fetchLeaderboardData = async () => {
       setLoading(true);
       try {
-        const data = [
-          { rank: 1, name: "Safal", score: 980, country: "Nepal", timestamp: "2024-12-13T09:30:00Z" },
-          { rank: 2, name: "Aayush", score: 970, country: "Nepal", timestamp: "2024-12-13T11:15:00Z" },
-          { rank: 3, name: "Awasthi", score: 960, country: "Nepal", timestamp: "2024-12-12T14:50:00Z" },
-          { rank: 4, name: "Swarnim", score: 950, country: "Nepal", timestamp: "2024-12-13T16:20:00Z" },
-          { rank: 5, name: "Alice Johnson", score: 940, country: "USA", timestamp: "2024-12-12T10:15:30Z" },
-          { rank: 6, name: "Bob Smith", score: 900, country: "Canada", timestamp: "2024-12-10T14:20:10Z" },
-          { rank: 7, name: "Carlos Vega", score: 870, country: "Spain", timestamp: "2024-12-11T08:50:22Z" },
-          { rank: 8, name: "Diana Kim", score: 860, country: "South Korea", timestamp: "2024-12-09T12:35:50Z" },
-          { rank: 9, name: "Ethan Wang", score: 830, country: "China", timestamp: "2024-12-12T15:40:00Z" },
-        ];
+        const response1 = await axios.get(process.env.NEXT_PUBLIC_API_URL + "leaderboard/");
+        setLeaderboardData(response1.data);
+
+        const response2 = await axios.get(process.env.NEXT_PUBLIC_API_URL + "problems-solved-per-day/");
+        setActivityData(response2.data);
         
-        setLeaderboardData(data);
       } catch (error) {
-        console.error("Failed to fetch leaderboard data:", error);
+        console.error("Failed to fetch leaderboard or activity data:", error);
       } finally {
         setLoading(false);
       }
@@ -74,47 +68,43 @@ export default function LeaderboardPage() {
       setSelectedUser(null);
     } else {
       const user = leaderboardData.find((entry) =>
-        entry.name.toLowerCase().includes(searchQuery.toLowerCase())
+        entry.username.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setSelectedUser(user || null);
     }
   }, [searchQuery, leaderboardData]);
 
   // Chart Data
-  const topScorers = leaderboardData.slice(0, 5).map((entry) => entry.name);
-  const topScores = leaderboardData.slice(0, 5).map((entry) => entry.score);
-  const timestamps = leaderboardData.map((entry) =>
-    new Date(entry.timestamp).toLocaleDateString()
-  );
-  const scores = leaderboardData.map((entry) => entry.score);
+  const userChartLabels = selectedUser ? [selectedUser.username] : leaderboardData.map((entry) => entry.username);
+  const userChartData = selectedUser ? [selectedUser.points] : leaderboardData.map((entry) => entry.points);
 
-  // Selected User Data for Charts
-  const userChartLabels = selectedUser ? [selectedUser.name] : topScorers;
-  const userChartData = selectedUser ? [selectedUser.score] : topScores;
+  // Activity Over Time Chart Data
+  const activityDates = Object.keys(activityData).sort();
+  const activityValues = activityDates.map((date) => activityData[date]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <main className="container mx-auto px-4 py-8">
-        <section className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-4">Leaderboard</h1>
-          <p className="text-lg">See how you rank among the top coders in the contest!</p>
+      <main className="container mx-auto px-4 py-4">
+        <section className="text-center ">
+          <h1 className="text-3xl font-bold ">Leaderboard</h1>
+          <p className="text-lg">See how you rank among the top scorers!</p>
         </section>
 
         {/* Analytics Section */}
-        <section className="mb-8">
+        <section className="mb-8 ">
           <h2 className="text-2xl font-bold mb-4">Analytics</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Top Scorers Bar Chart */}
+            {/* Scores Bar Chart */}
             <div className="bg-white shadow-md rounded-lg p-4">
               <h3 className="text-lg font-semibold mb-2">
-                {selectedUser ? `${selectedUser.name}'s Score` : "Top Scorers"}
+                {selectedUser ? `${selectedUser.username}'s Points` : "Leaderboard Points"}
               </h3>
               <Bar
                 data={{
                   labels: userChartLabels,
                   datasets: [
                     {
-                      label: "Scores",
+                      label: "Points",
                       data: userChartData,
                       backgroundColor: "#4CAF50",
                     },
@@ -126,22 +116,26 @@ export default function LeaderboardPage() {
 
             {/* Activity Over Time Line Chart */}
             <div className="bg-white shadow-md rounded-lg p-4">
-              <h3 className="text-lg font-semibold mb-2">
-                {selectedUser ? `${selectedUser.name}'s Activity` : "Activity Over Time"}
-              </h3>
+              <h3 className="text-lg font-semibold mb-2">Activity Over Time</h3>
               <Line
                 data={{
-                  labels: timestamps,
+                  labels: activityDates,
                   datasets: [
                     {
-                      label: "Scores",
-                      data: scores,
+                      label: "Problems Solved",
+                      data: activityValues,
                       borderColor: "#2196F3",
                       fill: false,
                     },
                   ],
                 }}
-                options={{ responsive: true }}
+                options={{
+                  responsive: true,
+                  scales: {
+                    x: { title: { display: true, text: "Date" } },
+                    y: { title: { display: true, text: "Problems Solved" } },
+                  },
+                }}
               />
             </div>
           </div>
@@ -152,7 +146,7 @@ export default function LeaderboardPage() {
           <div className="relative w-full max-w-lg">
             <input
               type="text"
-              placeholder="Search by name"
+              placeholder="Search by username"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full px-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -171,22 +165,16 @@ export default function LeaderboardPage() {
                 <thead className="bg-gray-100">
                   <tr>
                     <th className="px-6 py-3 text-left text-sm font-bold text-gray-600">Rank</th>
-                    <th className="px-6 py-3 text-left text-sm font-bold text-gray-600">Name</th>
-                    <th className="px-6 py-3 text-left text-sm font-bold text-gray-600">Country</th>
-                    <th className="px-6 py-3 text-left text-sm font-bold text-gray-600">Score</th>
-                    <th className="px-6 py-3 text-left text-sm font-bold text-gray-600">Timestamp</th>
+                    <th className="px-6 py-3 text-left text-sm font-bold text-gray-600">Username</th>
+                    <th className="px-6 py-3 text-left text-sm font-bold text-gray-600">Points</th>
                   </tr>
                 </thead>
                 <tbody>
                   {leaderboardData.map((entry, index) => (
-                    <tr key={entry.rank || index} className="border-b last:border-none">
-                      <td className="px-6 py-4">
-                        <Badge className="mr-2">{`#${entry.rank}`}</Badge>
-                      </td>
-                      <td className="px-6 py-4 font-semibold">{entry.name}</td>
-                      <td className="px-6 py-4">{entry.country}</td>
-                      <td className="px-6 py-4 font-bold">{entry.score}</td>
-                      <td className="px-6 py-4">{new Date(entry.timestamp).toLocaleString()}</td>
+                    <tr key={index} className="border-b last:border-none">
+                      <td className="px-6 py-4">{`#${index + 1}`}</td>
+                      <td className="px-6 py-4 font-semibold">{entry.username}</td>
+                      <td className="px-6 py-4 font-bold">{entry.points}</td>
                     </tr>
                   ))}
                 </tbody>

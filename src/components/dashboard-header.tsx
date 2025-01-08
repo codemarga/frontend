@@ -3,20 +3,33 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { RadioIcon, UserIcon } from "lucide-react";
+import { RadioIcon } from "lucide-react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export function DashboardHeader() {
   const pathname = usePathname();
   const links = [
-    { href: "/dashboard", label: "Dashboard" },
+    { href: "/", label: "Dashboard" },
     { href: "/problems", label: "Problems" },
     { href: "/contest", label: "Contest" },
     { href: "/leaderboard", label: "Leaderboard" },
     { href: "/groups", label: "Groups" },
     { href: "/signup", label: "Signup"},
   ];
+
+    const [session, setSession] = useState<any | null>(null);
+  
+    useEffect(() => {
+      const fetchSession = async () => {
+        const response = await fetch("/api/session");
+        const data = await response.json();
+        setSession(data.data);
+      };
+  
+      fetchSession();
+    }, []);
 
   return (
     <header className="bg-background border-b">
@@ -42,7 +55,7 @@ export function DashboardHeader() {
           <Input className="max-w-[200px]" placeholder="Search..." />
           <Button variant="outline">Create Group</Button>
           <Button>Join Group</Button>
-          <UserIcon className="h-6 w-6 text-muted-foreground" />
+          <Image src={session?.user?.image} alt="User" width={32} height={32} className="rounded-full" />
           <RadioIcon className="h-6 w-6 text-muted-foreground" />
         </div>
       </div>
