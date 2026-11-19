@@ -17,24 +17,17 @@ export function ContestantDetails() {
     const fetchLeaderboard = async () => {
       setLoading(true);
       try {
-        const response = await axios.get("http://localhost:8000/leaderboard/");
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || "https://django-backend-6qja.onrender.com/";
+        const leaderboardUrl = `${apiBase.replace(/\/$/, "")}/leaderboard/`;
+        const response = await axios.get(leaderboardUrl);
         const data = Array.isArray(response.data) ? response.data : [];
         if (data.length > 0) {
           setTopContestants(data.slice(0, 3));
         } else {
-          // Fallback if DB empty
-          setTopContestants([
-            { username: "Panda", points: 830 },
-            { username: "Swarnim Bajracharya", points: 817 },
-            { username: "hp", points: 496 }
-          ]);
+          setTopContestants([]);
         }
       } catch (e) {
-        setTopContestants([
-          { username: "Panda", points: 830 },
-          { username: "Swarnim Bajracharya", points: 817 },
-          { username: "hp", points: 496 }
-        ]);
+        setTopContestants([]);
       } finally {
         setLoading(false);
       }

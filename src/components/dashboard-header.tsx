@@ -88,21 +88,27 @@ export function DashboardHeader() {
             )}
           </Button>
 
-          <Link href="/profile" className="flex items-center gap-2 hover:opacity-85 transition-opacity">
-            {session?.user?.image ? (
-              <Image
-                src={session.user.image}
-                alt="User"
-                width={30}
-                height={30}
-                className="rounded-full ring-2 ring-border"
-              />
-            ) : (
-              <div className="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">
-                {session?.user?.name ? session.user.name[0].toUpperCase() : "U"}
-              </div>
-            )}
-          </Link>
+          {session?.user ? (
+            <Link href="/profile" className="flex items-center gap-2 hover:opacity-85 transition-opacity">
+              {session.user.image ? (
+                <Image
+                  src={session.user.image}
+                  alt="User"
+                  width={30}
+                  height={30}
+                  className="rounded-full ring-2 ring-border"
+                />
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">
+                  {session.user.name ? session.user.name[0].toUpperCase() : "U"}
+                </div>
+              )}
+            </Link>
+          ) : (
+            <Button asChild size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs h-8">
+              <Link href="/login">Sign In</Link>
+            </Button>
+          )}
         </div>
       </div>
     </header>

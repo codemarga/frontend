@@ -48,7 +48,9 @@ export function ProjectSummary() {
       .catch(() => {});
 
     // Fetch leaderboard
-    axios.get("http://localhost:8000/leaderboard/")
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || "https://django-backend-6qja.onrender.com/";
+    const leaderboardUrl = `${apiBase.replace(/\/$/, "")}/leaderboard/`;
+    axios.get(leaderboardUrl)
       .then((res) => setLeaderboard(Array.isArray(res.data) ? res.data : []))
       .catch(() => {});
   }, []);

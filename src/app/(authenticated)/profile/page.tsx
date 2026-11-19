@@ -34,21 +34,31 @@ export default function ProfilePage() {
     fetch("/api/session")
       .then((res) => res.json())
       .then((d) => {
-        setSession(d?.data);
+        if (!d?.data?.user) {
+          window.location.href = "/login";
+          return;
+        }
+        setSession(d.data);
       })
-      .catch(() => {});
+      .catch(() => {
+        window.location.href = "/login";
+      });
 
     // Fetch leaderboard
-    axios.get("http://localhost:8000/leaderboard/")
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || "https://django-backend-6qja.onrender.com/";
+    const leaderboardUrl = `${apiBase.replace(/\/$/, "")}/leaderboard/`;
+    axios.get(leaderboardUrl)
       .then((res) => {
         const data = Array.isArray(res.data) ? res.data : [];
         setLeaderboard(data);
-        const found = data.findIndex(
-          (u: any) => u.username === session?.user?.name || u.username === "Swarnim Bajracharya"
-        );
-        if (found !== -1) {
-          setUserRank(found + 1);
-          setUserPoints(data[found].points);
+        if (session?.user?.name) {
+          const found = data.findIndex(
+            (u: any) => u.username === session.user.name
+          );
+          if (found !== -1) {
+            setUserRank(found + 1);
+            setUserPoints(data[found].points);
+          }
         }
       })
       .catch(() => {});
@@ -116,7 +126,7 @@ export default function ProfilePage() {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-2xl font-black text-foreground">
-                    {session?.user?.name || "Swarnim Bajracharya"}
+                    {session?.user?.name || "User"}
                   </h1>
                   <Badge className="bg-indigo-500/10 text-indigo-400 border-indigo-500/30 text-xs">
                     Grandmaster
@@ -125,7 +135,7 @@ export default function ProfilePage() {
 
                 <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1">
                   <Mail className="w-3.5 h-3.5" />
-                  {session?.user?.email || "bajraswarnim@gmail.com"}
+                  {session?.user?.email || ""}
                 </p>
 
                 <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">

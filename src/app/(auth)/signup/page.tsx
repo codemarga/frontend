@@ -3,147 +3,223 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import Link from "next/link";
 import axios from "axios";
-import { Roboto } from "next/font/google";
+import { signIn } from "next-auth/react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import FloatingLabelInput from "@/components/floatingInput";
+import { FcGoogle } from "react-icons/fc";
+import { FaGithub } from "react-icons/fa";
+import { Code2, ArrowLeft } from "lucide-react";
 
-const roboto = Roboto({
-    weight: ["400", "500", "700"],
-    subsets: ["latin"],
-});
-
-/** SIGNUP COMPONENT */
 function Signup() {
-    const router = useRouter();
+  const router = useRouter();
 
-    const [user, setUser] = useState({ name: "", email: "", password: "" });
-    const [buttonDisabled, setButtonDisabled] = useState(true);
-    const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState({ name: "", email: "", password: "" });
+  const [buttonDisabled, setButtonDisabled] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState<string | null>(null);
 
-    useEffect(() => {
-        setButtonDisabled(
-            user.name === "" || user.email === "" || user.password === ""
-        );
-    }, [user]);
-
-    const handleChanges = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setUser({ ...user, [e.target.name]: e.target.value });
-    };
-
-    const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
-        e.preventDefault();
-        setLoading(true);
-
-        try {
-            const response = await axios.post(
-                process.env.NEXT_PUBLIC_REGISTER_URL!,
-                {
-                    username: user.name,
-                    email: user.email,
-                    password: user.password,
-                },
-                {
-                    headers: { "Content-Type": "application/json" },
-                }
-            );
-
-            toast.success("Signup successful! Please login to continue.");
-            router.push("/login");
-        } catch (error: any) {
-            console.error(error);
-
-            if (error.response) {
-                const statusCode = error.response.status;
-                const errorMessage =
-                    error.response.data?.error ||
-                    (statusCode === 400
-                        ? "Invalid details, please check and try again."
-                        : "An error occurred. Please try again later.");
-                toast.error(errorMessage);
-            } else {
-                toast.error("Network error. Please check your connection.");
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div className="relative w-full min-h-screen overflow-hidden bg-[#f8f3f0]">
-            <div
-                className="bg-white z-10 absolute top-[50px] left-[50px] bottom-[50px] right-[50px] flex items-start border-gray-300 rounded-3xl"
-                style={{ boxShadow: "0 5px 7px rgba(100, 100, 100, 0.5)" }}
-            >
-                <div className="flex relative w-[850px] h-full">
-                    <Image
-                        priority={true}
-                        src="/sycas-logo.svg"
-                        alt="Logo"
-                        width={800}
-                        height={240}
-                        className="absolute left-[30px] top-[13%] rounded-l-3xl"
-                    />
-                    <div className="absolute bottom-[15%] left-[10%] flex flex-col">
-                        <h1 className="text-[36px] font-bold text-[#1f1f1f] pb-2">Join Us</h1>
-                        <p className="text-[16px] text-[#1f1f1f]">
-                            Please sign up using the form on the right.
-                        </p>
-                    </div>
-                </div>
-
-                <div className="bg-white h-full rounded-r-3xl flex flex-1 flex-col justify-center">
-                    <div className="mt-5 sm:mx-auto sm:w-full sm:max-w-sm">
-                        <form className="space-y-6">
-                            <div className="sm:mx-auto sm:w-full sm:max-w-sm flex flex-col gap-2 items-center mb-[40px]">
-                                <h2
-                                    className={`${roboto.className} text-center text-[40px] font-bold leading-9 tracking-tight text-[#17c8b9]`}
-                                >
-                                    {loading ? "Loading..." : "Create an Account"}
-                                </h2>
-                            </div>
-                            <FloatingLabelInput
-                                id="name"
-                                name="name"
-                                value={user.name}
-                                placeholder="Full Name"
-                                onChange={handleChanges}
-                            />
-                            <FloatingLabelInput
-                                id="email"
-                                name="email"
-                                value={user.email}
-                                placeholder="Email"
-                                onChange={handleChanges}
-                            />
-                            <FloatingLabelInput
-                                id="password"
-                                name="password"
-                                value={user.password}
-                                placeholder="Password"
-                                onChange={handleChanges}
-                            />
-
-                            <div>
-                                <button
-                                    type="submit"
-                                    disabled={buttonDisabled}
-                                    className={`${buttonDisabled ? "bg-[#17c8b9]" : "bg-[#e16e28]"
-                                        } flex w-full max-w-xs mx-auto justify-center rounded-md py-3 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-[#4ae0d3]`}
-                                    onClick={handleSubmit}
-                                >
-                                    {loading ? "Signing up..." : "Sign Up"}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            <ToastContainer />
-        </div>
+  useEffect(() => {
+    setButtonDisabled(
+      user.name.trim() === "" || user.email.trim() === "" || user.password.trim() === ""
     );
+  }, [user]);
+
+  const handleChanges = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUser({ ...user, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (buttonDisabled) return;
+    setLoading(true);
+
+    try {
+      await axios.post(
+        process.env.NEXT_PUBLIC_REGISTER_URL!,
+        {
+          username: user.name,
+          email: user.email,
+          password: user.password,
+        },
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      toast.success("Signup successful! Please sign in to continue.");
+      setTimeout(() => router.push("/login"), 1500);
+    } catch (error: any) {
+      if (error.response) {
+        const statusCode = error.response.status;
+        const errorMessage =
+          error.response.data?.details ||
+          error.response.data?.error ||
+          (statusCode === 400
+            ? "Invalid details, please check and try again."
+            : "An error occurred. Please try again later.");
+        toast.error(errorMessage);
+      } else {
+        toast.error("Network error. Please check your connection.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOAuthSignIn = async (provider: "google" | "github") => {
+    try {
+      setSocialLoading(provider);
+      await signIn(provider, { callbackUrl: "/profile" });
+    } catch (err: any) {
+      toast.error(`Failed to connect to ${provider}`);
+      setSocialLoading(null);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 sm:p-6 lg:p-8 relative">
+      {/* Top back button */}
+      <Link
+        href="/"
+        className="absolute top-6 left-6 flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" /> Back to Home
+      </Link>
+
+      <div className="w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-2">
+        {/* Left Branding Panel */}
+        <div className="hidden lg:flex flex-col justify-between p-10 bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 border-r border-slate-800">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-600/30">
+              <Code2 className="w-6 h-6" />
+            </div>
+            <span className="text-2xl font-black tracking-tight text-white">CodeMarga</span>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="text-3xl font-extrabold text-white leading-tight">
+              Join the Competitive Coding Community.
+            </h2>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              Create an account to track your ratings, benchmark your algorithms, and compete with coders worldwide.
+            </p>
+          </div>
+
+          <div className="text-xs text-slate-500">
+            &copy; 2026 CodeMarga. Independent profiles supported for Google and GitHub.
+          </div>
+        </div>
+
+        {/* Right Form Panel */}
+        <div className="p-8 sm:p-10 flex flex-col justify-center">
+          <div className="mb-6 text-center lg:text-left">
+            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+              Create Account
+            </h1>
+            <p className="text-sm text-slate-400 mt-1">
+              Sign up with social providers or your email
+            </p>
+          </div>
+
+          {/* Social Sign-In Buttons */}
+          <div className="space-y-3 mb-6">
+            <button
+              type="button"
+              disabled={socialLoading !== null}
+              onClick={() => handleOAuthSignIn("google")}
+              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-slate-800 hover:bg-slate-750 border border-slate-700 hover:border-slate-600 rounded-xl text-sm font-semibold text-white shadow-sm transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
+            >
+              <FcGoogle className="w-5 h-5" />
+              <span>
+                {socialLoading === "google" ? "Connecting to Google..." : "Sign up with Google"}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              disabled={socialLoading !== null}
+              onClick={() => handleOAuthSignIn("github")}
+              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-slate-800 hover:bg-slate-750 border border-slate-700 hover:border-slate-600 rounded-xl text-sm font-semibold text-white shadow-sm transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
+            >
+              <FaGithub className="w-5 h-5 text-white" />
+              <span>
+                {socialLoading === "github" ? "Connecting to GitHub..." : "Sign up with GitHub"}
+              </span>
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-800"></div>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-slate-900 px-3 text-slate-500 font-medium tracking-wider">
+                Or with email
+              </span>
+            </div>
+          </div>
+
+          {/* Email/Password Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="text-slate-900">
+              <FloatingLabelInput
+                id="name"
+                name="name"
+                value={user.name}
+                placeholder="Full Name / Username"
+                onChange={handleChanges}
+              />
+            </div>
+
+            <div className="text-slate-900">
+              <FloatingLabelInput
+                id="email"
+                name="email"
+                value={user.email}
+                placeholder="Email Address"
+                onChange={handleChanges}
+              />
+            </div>
+
+            <div className="text-slate-900">
+              <FloatingLabelInput
+                id="password"
+                name="password"
+                value={user.password}
+                placeholder="Password"
+                onChange={handleChanges}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={buttonDisabled || loading}
+              className={`w-full py-3 rounded-xl text-sm font-semibold text-white shadow-md transition-all ${
+                buttonDisabled || loading
+                  ? "bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700"
+                  : "bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] shadow-indigo-600/30"
+              }`}
+            >
+              {loading ? "Creating Account..." : "Create Account"}
+            </button>
+          </form>
+
+          {/* Footer Navigation */}
+          <div className="mt-6 text-center text-xs text-slate-400">
+            Already have an account?{" "}
+            <Link href="/login" className="text-indigo-400 hover:text-indigo-300 font-semibold underline underline-offset-4">
+              Sign in
+            </Link>
+          </div>
+        </div>
+      </div>
+      <ToastContainer theme="dark" />
+    </div>
+  );
 }
 
 export default Signup;
