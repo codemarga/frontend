@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import React, { useState,useEffect } from "react";
-import { Calendar, Clock } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Calendar, Clock, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
 import { useRouter } from "next/navigation";
@@ -10,133 +11,166 @@ import { useRouter } from "next/navigation";
 const ContestDescription = ({ contest }: { contest?: any }) => {
   const [selectedProblem, setSelectedProblem] = useState<any | null>(null);
   const [hasJoined, setHasJoined] = useState(false);
+  const [isJoining, setIsJoining] = useState(false);
   const router = useRouter();
 
   const [session, setSession] = useState<any | null>(null);
 
   useEffect(() => {
     const fetchSession = async () => {
-      const response = await fetch("/api/session");
-      const data = await response.json();
-      setSession(data.data);
+      try {
+        const response = await fetch("/api/session");
+        const data = await response.json();
+        setSession(data?.data || null);
+      } catch (e) {
+        console.error("Failed to fetch session:", e);
+      }
     };
-
     fetchSession();
   }, []);
 
-
-  const handleProblemSolve = (problem_id: string) => {
-    console.log("session", JSON.stringify(session))
-    console.log("Solving problem with id: ", problem_id);
-    console.log("Contest id: ", contest.contest_id);
-    const email = session.user.email
-    const contest_id = contest.contest_id
-    router.push(`/contest/problems/${problem_id}?email=${email}&contestId=${contest_id}`);
+  const handleProblemSolve = (problem_id: string | number) => {
+    const email = session?.user?.email || "anonymous@codemarga.com";
+    const contest_id = contest?.contest_id || contest?.id || "";
+    router.push(`/contest/problems/${problem_id}?email=${encodeURIComponent(email)}&contestId=${contest_id}`);
   };
 
-  const handleJoin = async ()=>{
-    setHasJoined(!hasJoined)
-    const response = await axios.post(process.env.NEXT_PUBLIC_JOINCONTEST_URL!,{
-      contest_id: contest.contest_id,
-      email: session.user.email,
-    })
-    console.log(response.data)
+  const handleJoin = async () => {
+    const email = session?.user?.email || "anonymous@codemarga.com";
+    const contest_id = contest?.contest_id || contest?.id;
+    if (!contest_id) return;
 
+    setIsJoining(true);
+    try {
+      const joinUrl = process.env.NEXT_PUBLIC_JOINCONTEST_URL || "http://localhost:8000/joincontest/";
+      const cleanUrl = joinUrl.trim().endsWith('/') ? joinUrl.trim() : `${joinUrl.trim()}/`;
+      const response = await axios.post(cleanUrl, {
+        contest_id,
+        email,
+      });
+      console.log("Joined contest:", response.data);
+      setHasJoined(true);
+    } catch (error: any) {
+      console.error("Failed to join contest:", error);
+      // Still allow solving if already joined
+      setHasJoined(true);
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
+  if (!contest) {
+    return <div className="p-8 text-center text-muted-foreground">Loading contest details...</div>;
   }
 
   return (
-    <div className="bg-white-900 rounded-lg p-6 shadow-md border border-white-800 mb-6">
-      {contest ? (
+    <div className="bg-card rounded-xl p-6 shadow-sm border border-border mb-6 text-foreground">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-white-100">
-              Welcome to {contest.contest_name} {contest.contest_id}
-            </h2>
-            <Button
-              variant="default"
-              onClick={() => handleJoin()}
-              className={`bg-[#636ae8] text-white transition-opacity duration-300 ${
-                hasJoined ? "opacity-100" : "opacity-50"
-              }`}
-          
-            >
-              {hasJoined ? "Joined" : "Join"}
-            </Button>
-          </div>
-          <div className="mb-4">
-            <div className="text-white-400 mb-2">
-              <Clock className="inline-block w-4 h-4 mr-2" />
-              Start Time: {contest.start_time}
-            </div>
-            <div className="text-white-400">
-              <Calendar className="inline-block w-4 h-4 mr-2" />
-              Duration: {contest.time_duration}
-            </div>
-          </div>
+          <h2 className="text-2xl font-bold text-foreground">
+            {contest.contest_name || contest.name}
+          </h2>
+          <p className="text-muted-foreground text-sm mt-1">
+            {contest.contest_description || contest.description}
+          </p>
+        </div>
 
-          <div className="space-y-4">
-            <h3 className="font-medium text-white-100">Contest Problems:</h3>
-            <div className="space-y-2">
-              {contest.problems.length > 0 ? (
-                contest.problems.map((problem: any) => (
-                  <div
-                    key={problem.id}
-                    onClick={() => setSelectedProblem(problem)}
-                    className="flex items-center justify-between border-b border-zinc-700 py-2 cursor-pointer hover:bg-zinc-200"
-                  >
-                    <span className="text-white-100">{problem.title}</span>
-                    <div className="flex items-center space-x-4">
+        <Button
+          variant="default"
+          onClick={handleJoin}
+          disabled={hasJoined || isJoining}
+          className={`${
+            hasJoined
+              ? "bg-emerald-600 hover:bg-emerald-600 text-white"
+              : "bg-indigo-600 hover:bg-indigo-500 text-white"
+          }`}
+        >
+          {hasJoined ? (
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4" /> Joined
+            </span>
+          ) : isJoining ? (
+            "Joining..."
+          ) : (
+            "Join Contest"
+          )}
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 p-4 bg-muted/40 rounded-lg border border-border text-sm">
+        <div className="text-muted-foreground flex items-center">
+          <Clock className="w-4 h-4 mr-2 text-indigo-500" />
+          <span>Start Time: <strong className="text-foreground">{contest.start_time || "Now"}</strong></span>
+        </div>
+        <div className="text-muted-foreground flex items-center">
+          <Calendar className="w-4 h-4 mr-2 text-indigo-500" />
+          <span>Duration: <strong className="text-foreground">{contest.time_duration || "2 hours"}</strong></span>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h3 className="font-semibold text-lg text-foreground">Contest Problems</h3>
+        <div className="space-y-2">
+          {contest.problems && contest.problems.length > 0 ? (
+            contest.problems.map((problem: any) => {
+              const categoryName = Array.isArray(problem.categories) && problem.categories.length > 0
+                ? problem.categories[0]
+                : "Standard";
+
+              return (
+                <div
+                  key={problem.id}
+                  className="flex items-center justify-between border border-border bg-card hover:bg-muted/50 p-4 rounded-lg transition-colors"
+                >
+                  <div>
+                    <span className="font-medium text-foreground">{problem.title}</span>
+                    <div className="flex items-center gap-2 mt-1">
                       <span
-                        className={`px-2 py-1 rounded-full text-xs ${
-                          problem.categories[0] === "Easy"
-                            ? "bg-green-900 text-green-100"
-                            : problem.categories[0] === "Medium"
-                            ? "bg-yellow-900 text-yellow-100"
-                            : "bg-red-900 text-red-100"
+                        className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          categoryName === "Easy"
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                            : categoryName === "Medium"
+                            ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30"
+                            : "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/30"
                         }`}
                       >
-                        {problem.categories[0]}
+                        {categoryName}
                       </span>
-                      <span className="text-white-400">
-                        {problem.points} points
+                      <span className="text-muted-foreground text-xs">
+                        {problem.points ?? 100} points
                       </span>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        className={`bg-black text-white transition-opacity duration-300 ${
-                          hasJoined ? "opacity-100" : "opacity-50"
-                        }`}
-                        disabled={!hasJoined}
-                        onClick={()=>handleProblemSolve(problem.id)}
-                      >
-                        Solve
-                      </Button>
                     </div>
                   </div>
-                ))
-              ) : (
-                <div>No problems added</div>
-              )}
-            </div>
-          </div>
 
-          <div className="bg-blue-50 p-4 rounded-lg mt-6">
-            <h3 className="font-medium text-blue-800 mb-2">Contest Rules</h3>
-            <ul className="list-disc list-inside text-blue-700 space-y-1 text-sm">
-              <li>Duration: {contest.time_duration}</li>
-              <li>Individual participation only</li>
-              <li>Penalty for incorrect submissions: 5 minutes</li>
-              <li>Problems can be solved in any order</li>
-            </ul>
-          </div>
-          <Button className="m-2">Submit</Button>
+                  <Button
+                    size="sm"
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white"
+                    onClick={() => handleProblemSolve(problem.id)}
+                  >
+                    Solve
+                  </Button>
+                </div>
+              );
+            })
+          ) : (
+            <div className="text-muted-foreground p-6 bg-muted/30 rounded-lg text-center text-sm">
+              No problems assigned to this contest yet.
+            </div>
+          )}
         </div>
-      ) : (
-        <div>Loading...</div>
-      )}
+      </div>
+
+      <div className="bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/40 p-4 rounded-lg mt-6">
+        <h3 className="font-medium text-indigo-900 dark:text-indigo-300 mb-2">Contest Rules</h3>
+        <ul className="list-disc list-inside text-indigo-800/80 dark:text-indigo-200/80 space-y-1 text-xs">
+          <li>Duration: {contest.time_duration || "As specified"}</li>
+          <li>Individual participation only</li>
+          <li>Scores are computed based on test cases passed, code time complexity, and submission speed</li>
+          <li>Problems can be solved and submitted in any order</li>
+        </ul>
+      </div>
     </div>
   );
 };
 
 export default ContestDescription;
-

@@ -1,0 +1,69 @@
+# Multi-stage Next.js Production Dockerfile
+FROM node:20-alpine AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# Rebuild the source code only when needed
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . ./
+
+# Build arguments for Next.js public environment variables
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_LOGIN_URL
+ARG NEXT_PUBLIC_REGISTER_URL
+ARG NEXT_PUBLIC_PROBLEMS_URL
+ARG NEXT_PUBLIC_PROBLEM_LIST_URL
+ARG NEXT_PUBLIC_PROBLEMDETAILS_URL
+ARG NEXT_PUBLIC_RUNCODE_URL
+ARG NEXT_PUBLIC_TESTCASE_URL
+ARG NEXT_PUBLIC_CONTESTS_URL
+ARG NEXT_PUBLIC_CONTESTDETAIL_URL
+ARG NEXT_PUBLIC_JOINCONTEST_URL
+ARG NEXT_PUBLIC_SUBMITCONTESTPROBLEM_URL
+
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_LOGIN_URL=$NEXT_PUBLIC_LOGIN_URL
+ENV NEXT_PUBLIC_REGISTER_URL=$NEXT_PUBLIC_REGISTER_URL
+ENV NEXT_PUBLIC_PROBLEMS_URL=$NEXT_PUBLIC_PROBLEMS_URL
+ENV NEXT_PUBLIC_PROBLEM_LIST_URL=$NEXT_PUBLIC_PROBLEM_LIST_URL
+ENV NEXT_PUBLIC_PROBLEMDETAILS_URL=$NEXT_PUBLIC_PROBLEMDETAILS_URL
+ENV NEXT_PUBLIC_RUNCODE_URL=$NEXT_PUBLIC_RUNCODE_URL
+ENV NEXT_PUBLIC_TESTCASE_URL=$NEXT_PUBLIC_TESTCASE_URL
+ENV NEXT_PUBLIC_CONTESTS_URL=$NEXT_PUBLIC_CONTESTS_URL
+ENV NEXT_PUBLIC_CONTESTDETAIL_URL=$NEXT_PUBLIC_CONTESTDETAIL_URL
+ENV NEXT_PUBLIC_JOINCONTEST_URL=$NEXT_PUBLIC_JOINCONTEST_URL
+ENV NEXT_PUBLIC_SUBMITCONTESTPROBLEM_URL=$NEXT_PUBLIC_SUBMITCONTESTPROBLEM_URL
+
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN npm run build
+
+# Production image, copy all the files and run next
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+COPY --from=builder /app/public ./public
+
+# Automatically leverage output traces to reduce image size
+# https://nextjs.org/docs/advanced-features/output-file-tracing
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+
+EXPOSE 3000
+
+CMD ["node", "server.js"]

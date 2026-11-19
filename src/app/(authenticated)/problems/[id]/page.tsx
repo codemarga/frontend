@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -20,247 +19,405 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import Editor, { loader } from "@monaco-editor/react";
-import * as monaco from "monaco-editor";
+import Editor from "@monaco-editor/react";
 import { FaPlay } from "react-icons/fa";
 import { IoCloudUploadSharp } from "react-icons/io5";
+import { Loader2 } from "lucide-react";
 import axios from "axios";
-import { Xterm } from "xterm-react";
 import TestCase from "@/components/testcase";
-
-// Problem Details
-const initialproblemDetails = {
-  id: 1,
-  title: "Two Sum",
-  description:
-    "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target. You may assume that each input would have exactly one solution, and you may not use the same element twice.",
-  examples: [
-    {
-      input: "nums = [2,7,11,15], target = 9",
-      output: "[0,1]",
-      explanation: "Because nums[0] + nums[1] == 9, we return [0, 1].",
-    },
-  ],
-  constraints: [
-    "2 <= nums.length <= 104",
-    "-109 <= nums[i] <= 109",
-    "-109 <= target <= 109",
-    "Only one valid answer exists.",
-  ],
-};
+import { useTheme } from "@/components/theme-provider";
 
 export default function ProblemPage() {
   const params = useParams();
-  const [code, setCode] = useState("// Write your code here");
-  const [language, setLanguage] = useState<string>("javascript");
+  const problem_id = params?.id as string;
+  const { theme } = useTheme();
+
+  const [language, setLanguage] = useState<string>("python");
+  const [code, setCode] = useState<string>("# Loading code template...");
   const [activeTab, setActiveTab] = useState<string>("code");
-  const [problemDetails, setProblemDetails] = useState<any>(
-    initialproblemDetails
-  );
-  const [startTimeStamp, setStartTimeStamp] = useState<number>();
+  const [problemDetails, setProblemDetails] = useState<any>(null);
+  const [loadingProblem, setLoadingProblem] = useState<boolean>(true);
+  const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  const [startTimeStamp, setStartTimeStamp] = useState<number>(Date.now());
+  const [ter_res, setTerRes] = useState<any>({});
+  const [output, setOutput] = useState<any>({});
+  const [session, setSession] = useState<any | null>(null);
+
   useEffect(() => {
-    const timestamp = Date.now();
-    setStartTimeStamp(timestamp);
-    console.log("timestamp", timestamp);
+    setStartTimeStamp(Date.now());
   }, []);
 
-  const [ter_res, setTerRes] = useState<any>({});
-
-  const [session, setSession] = useState<any | null>(null);
-  
   useEffect(() => {
     const fetchSession = async () => {
-      const response = await fetch("/api/session");
-      const data = await response.json();
-      setSession(data.data);
+      try {
+        const response = await fetch("/api/session");
+        const data = await response.json();
+        setSession(data?.data || null);
+      } catch (e) {
+        console.error("Failed to fetch session:", e);
+      }
     };
-
     fetchSession();
   }, []);
 
-  const RunCode = async (code: any, language: any) => {
-    console.log("hello");
-    const problem_id = params?.id;
-    const email = session.user.email
-    const endtimestamp = Date.now();
-    const time = endtimestamp - (startTimeStamp || 0);
-
-    
-    try {
-      console.log(code, language);
-      const response = await axios.post(
-        process.env.NEXT_PUBLIC_RUNCODE_URL!,
-        { code, language, problem_id ,email,time},
-        { headers: { "Content-Type": "application/json" } }
-      );
-      // const data = JSON.stringify(response.data);
-      console.log("response", response.data);
-      setTerRes(response.data);
-      if (response.data.description === "Accepted") {
-        setActiveTab("testcases");
-      }
-      if(response.data.description === "Compilation Error"){
-        setActiveTab("terminal");
-      }
-      
-      const lines = (response.data.stdout as string)
-      .split('\n')
-      .filter((line: any) => line.trim() !== '');
-    
-    const outputs: any = {};
-    lines.forEach((line: any, index: any) => {
-      outputs[`output${index + 1}`] = line;
-    });
-    
-    setOutput(outputs);
-
-
-    
-
-    } catch (error: any) {
-      console.log("eror");
-      console.log(error.message);
-    }
-  };
-
-  const [output, setOutput] = useState<any>({});
-
   useEffect(() => {
     const fetchProblemDetails = async () => {
-      console.log("params", params);
+      if (!problem_id) return;
+      setLoadingProblem(true);
       try {
-        if (params) {
-          const response = await axios.get(
-            `${process.env.NEXT_PUBLIC_PROBLEMDETAILS_URL}${params.id}`
-          );
-          console.log("response", response.data);
-          setProblemDetails(response.data);
-        } else {
-          console.log("params is null");
+        const baseUrl = process.env.NEXT_PUBLIC_PROBLEMDETAILS_URL || "http://localhost:8000/pbs/";
+        const cleanBase = baseUrl.trim().endsWith('/') ? baseUrl.trim() : `${baseUrl.trim()}/`;
+        const response = await axios.get(`${cleanBase}${problem_id}/`);
+        const data = response.data;
+        setProblemDetails(data);
+
+        // Initialize editor with default code for current language
+        if (data.default_code && data.default_code[language]) {
+          setCode(data.default_code[language]);
+        } else if (data.default_code?.python) {
+          setCode(data.default_code.python);
+          setLanguage("python");
         }
       } catch (error: any) {
-        console.log(error.message);
+        console.error("Failed to fetch problem details:", error?.message);
+      } finally {
+        setLoadingProblem(false);
       }
     };
     fetchProblemDetails();
-  }, []);
+  }, [problem_id]);
 
-  function handleEditorChange(value: string | undefined): void {
-    setCode(value || "");
-  }
-
-  function handleLanguageChange(selected: string): void {
+  const handleLanguageChange = (selected: string) => {
     setLanguage(selected);
-    setCode(problemDetails.default_code[selected]);
-  }
+    if (problemDetails?.default_code?.[selected]) {
+      setCode(problemDetails.default_code[selected]);
+    }
+  };
+
+  const handleEditorChange = (value: string | undefined) => {
+    setCode(value || "");
+  };
+
+  const executeCode = async (isSubmit: boolean = false) => {
+    if (!problem_id) return;
+    if (isSubmit) setIsSubmitting(true);
+    else setIsRunning(true);
+    setStatusMessage(isSubmit ? "Submitting code..." : "Running code...");
+
+    const email = session?.user?.email || "anonymous@codemarga.com";
+    const endtimestamp = Date.now();
+    const time = endtimestamp - (startTimeStamp || Date.now());
+
+    try {
+      const runUrl = process.env.NEXT_PUBLIC_RUNCODE_URL?.trim() || "http://localhost:8000/runcode/";
+      const cleanUrl = runUrl.endsWith('/') ? runUrl : `${runUrl}/`;
+
+      const response = await axios.post(
+        cleanUrl,
+        { code, language, problem_id: Number(problem_id), email, time },
+        { headers: { "Content-Type": "application/json" } }
+      );
+
+      const resData = response.data;
+      setTerRes(resData);
+      setStatusMessage(`Status: ${resData.description || "Completed"}`);
+
+      // Parse outputs for test cases component
+      if (resData.stdout) {
+        const lines = (resData.stdout as string)
+          .split('\n')
+          .filter((line: string) => line.trim() !== '');
+
+        const outputs: any = {};
+        lines.forEach((line: string, index: number) => {
+          outputs[`output${index + 1}`] = line;
+        });
+        setOutput(outputs);
+      }
+
+      // Switch tab based on result
+      if (resData.description === "Accepted") {
+        setActiveTab("testcases");
+      } else {
+        setActiveTab("terminal");
+      }
+    } catch (error: any) {
+      console.error("Error executing code:", error);
+      const errMsg = error.response?.data?.error || error.message || "Failed to execute code";
+      setStatusMessage(`Error: ${errMsg}`);
+      setTerRes({ stderr: errMsg, description: "Execution Error" });
+      setActiveTab("terminal");
+    } finally {
+      setIsRunning(false);
+      setIsSubmitting(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="mx-auto px-8 py-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <Card>
-            <h1 className="text-3xl font-bold pl-2 my-3">
-              {problemDetails.title}
-            </h1>
-            <CardHeader>
-              <CardTitle>Problem Description</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="mb-4">{problemDetails.description}</p>
-              <CardTitle>Category</CardTitle>
-              <p className="mb-4">{problemDetails.category}</p>
-              <h3 className="font-semibold mb-2">Examples:</h3>
-              {problemDetails.examples.map((example: any) => (
-                <div key={example.id} className="mb-4">
-                  <p>
-                    <strong>Input:</strong> {example.input}
-                  </p>
-                  <p>
-                    <strong>Output:</strong> {example.output}
-                  </p>
-                  <p>
-                    <strong>Explanation:</strong> {example.explanation}
-                  </p>
-                </div>
-              ))}
-              <h3 className="font-semibold mb-2">Constraints:</h3>
-              <ul className="list-disc list-inside">
-                {problemDetails.constraints}
-              </ul>
-              <h3 className="font-semibold mb-2 mt-2">Follow Up</h3>
-              <p className="mb-4">{problemDetails.followup}</p>
-            </CardContent>
+    <div className="min-h-screen bg-background text-foreground">
+      <main className="mx-auto px-6 py-4">
+        {statusMessage && (
+          <div className="mb-3 px-4 py-2 rounded-md bg-secondary text-secondary-foreground text-sm border border-border flex items-center justify-between">
+            <span>{statusMessage}</span>
+            <button
+              onClick={() => setStatusMessage(null)}
+              className="text-muted-foreground hover:text-foreground text-xs ml-4"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Left Panel: Problem Information */}
+          <Card className="h-[calc(100vh-140px)] overflow-y-auto bg-card border-border">
+            {loadingProblem ? (
+              <div className="flex items-center justify-center h-full">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : problemDetails ? (
+              <>
+                <h1 className="text-2xl font-bold p-6 pb-2 text-foreground">
+                  {problemDetails.title}
+                </h1>
+                <CardHeader className="pt-2 pb-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {Array.isArray(problemDetails.category) && problemDetails.category.map((cat: string, i: number) => {
+                      const lower = cat.toLowerCase();
+                      const isDifficulty = ["easy", "medium", "hard"].includes(lower);
+                      return (
+                        <span
+                          key={i}
+                          className={`px-2.5 py-0.5 rounded text-xs font-medium border ${
+                            isDifficulty
+                              ? lower === "easy"
+                                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                                : lower === "medium"
+                                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                                : "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30"
+                              : "bg-secondary text-secondary-foreground border-border"
+                          }`}
+                        >
+                          {cat}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4 text-sm text-foreground/90">
+                  <div>
+                    <h3 className="font-semibold text-foreground mb-1 text-sm">Description</h3>
+                    <p className="whitespace-pre-wrap leading-relaxed text-muted-foreground dark:text-zinc-300">
+                      {problemDetails.description}
+                    </p>
+                  </div>
+
+                  {problemDetails.examples && (
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-2 text-sm">Examples:</h3>
+                      {(Array.isArray(problemDetails.examples) ? problemDetails.examples : []).map((example: any, idx: number) => (
+                        <div
+                          key={idx}
+                          className="mb-3 p-3.5 bg-muted/50 dark:bg-zinc-900/80 rounded-lg border border-border dark:border-zinc-800 space-y-1.5 font-mono text-xs"
+                        >
+                          <p>
+                            <strong className="text-foreground dark:text-zinc-200 font-semibold">Input:</strong>{" "}
+                            <span className="text-muted-foreground dark:text-zinc-300">
+                              {typeof example.input === 'object' ? JSON.stringify(example.input) : example.input}
+                            </span>
+                          </p>
+                          <p>
+                            <strong className="text-foreground dark:text-zinc-200 font-semibold">Output:</strong>{" "}
+                            <span className="text-muted-foreground dark:text-zinc-300">
+                              {typeof example.output === 'object' ? JSON.stringify(example.output) : example.output}
+                            </span>
+                          </p>
+                          {example.explanation && (
+                            <p>
+                              <strong className="text-foreground dark:text-zinc-200 font-semibold">Explanation:</strong>{" "}
+                              <span className="text-muted-foreground dark:text-zinc-300">{example.explanation}</span>
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {problemDetails.constraints && (
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-1 text-sm">Constraints:</h3>
+                      <div className="p-3.5 bg-muted/50 dark:bg-zinc-900/80 rounded-lg border border-border dark:border-zinc-800 font-mono text-xs text-foreground dark:text-zinc-300">
+                        {Array.isArray(problemDetails.constraints) ? (
+                          <ul className="list-disc list-inside space-y-1">
+                            {problemDetails.constraints.map((c: string, idx: number) => (
+                              <li key={idx}>{c}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p>{problemDetails.constraints}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {problemDetails.followup && (
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-1 text-sm">Follow Up:</h3>
+                      <p className="text-muted-foreground italic text-xs">{problemDetails.followup}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </>
+            ) : (
+              <div className="p-6 text-muted-foreground">Problem not found.</div>
+            )}
           </Card>
-          <div className="w-full ml-1">
+
+          {/* Right Panel: Editor, Test Cases, Terminal */}
+          <div className="w-full">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList>
-                <TabsTrigger value="code">Code</TabsTrigger>
+              <TabsList className="bg-muted mb-2">
+                <TabsTrigger value="code">Code Editor</TabsTrigger>
                 <TabsTrigger value="testcases">Test Cases</TabsTrigger>
-                <TabsTrigger value="terminal">Terminal</TabsTrigger>
+                <TabsTrigger value="terminal">
+                  Terminal
+                  {ter_res.description && (
+                    <span className={`ml-2 text-xs px-1.5 py-0.5 rounded ${
+                      ter_res.description === "Accepted"
+                        ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-medium"
+                        : "bg-red-500/20 text-red-600 dark:text-red-400 font-medium"
+                    }`}>
+                      {ter_res.description}
+                    </span>
+                  )}
+                </TabsTrigger>
               </TabsList>
-              <TabsContent value="code">
-                <div className="flex items-center  bg-black text-white border-none ">
-                  <Select
-                    onValueChange={(value) => handleLanguageChange(value)}
-                  >
-                    <SelectTrigger
-                      id="language"
-                      className="w-[150px] h-[15px] ml-2"
-                    >
+
+              {/* Code Tab */}
+              <TabsContent value="code" className="m-0">
+                <div className="flex items-center justify-between p-2 bg-muted/60 dark:bg-zinc-900 rounded-t-lg border border-border dark:border-zinc-800 border-b-0">
+                  <Select value={language} onValueChange={handleLanguageChange}>
+                    <SelectTrigger className="w-[140px] h-8 bg-background border-border text-foreground text-xs">
                       <SelectValue placeholder="Select language" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="python">Python</SelectItem>
-                      <SelectItem value="cpp">C++</SelectItem>
-                      <SelectItem value="java">Java</SelectItem>
+                      <SelectItem value="python">Python 3</SelectItem>
+                      <SelectItem value="cpp">C++ (GCC)</SelectItem>
+                      <SelectItem value="java">Java (OpenJDK)</SelectItem>
                     </SelectContent>
                   </Select>
-                  <div
-                    className="flex items-center space-x-3 mr-5 cursor-pointer"
-                    onClick={() => RunCode(code, language)}
-                  >
-                    <FaPlay />
-                    <div>Run</div>
-                  </div>
 
-                  <div className="flex items-center space-x-3 mr-5">
-                    <IoCloudUploadSharp />
-                    <button>Submit</button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={isRunning || isSubmitting}
+                      onClick={() => executeCode(false)}
+                      className="h-8 gap-2 bg-background hover:bg-muted text-foreground border-border"
+                    >
+                      {isRunning ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <FaPlay className="w-3 h-3 text-emerald-500" />
+                      )}
+                      <span>Run</span>
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      disabled={isRunning || isSubmitting}
+                      onClick={() => executeCode(true)}
+                      className="h-8 gap-2 bg-emerald-600 hover:bg-emerald-500 text-white"
+                    >
+                      {isSubmitting ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <IoCloudUploadSharp className="w-4 h-4" />
+                      )}
+                      <span>Submit</span>
+                    </Button>
                   </div>
                 </div>
-                <Editor
-                  height="78vh"
-                  theme="vs-dark"
-                  language={language}
-                  value={code}
-                  onChange={handleEditorChange}
-                  options={{
-                    fontSize: 14,
-                    minimap: { enabled: false },
-                  }}
-                />
+
+                <div className="border border-border dark:border-zinc-800 rounded-b-lg overflow-hidden">
+                  <Editor
+                    height="calc(100vh - 210px)"
+                    theme={theme === "dark" ? "vs-dark" : "light"}
+                    language={language === "cpp" ? "cpp" : language === "java" ? "java" : "python"}
+                    value={code}
+                    onChange={handleEditorChange}
+                    options={{
+                      fontSize: 14,
+                      minimap: { enabled: false },
+                      scrollBeyondLastLine: false,
+                      tabSize: 4,
+                      automaticLayout: true,
+                    }}
+                  />
+                </div>
               </TabsContent>
-              <TabsContent value="testcases">
-                <TestCase problemId={params?.id as string} outputs={output}/>
+
+              {/* Test Cases Tab */}
+              <TabsContent value="testcases" className="m-0">
+                <TestCase problemId={problem_id} outputs={output} />
               </TabsContent>
-              <TabsContent value="terminal">
-                {/* <Card>
-                  <CardHeader>
-                    <CardTitle>Terminal</CardTitle>
-                    <CardDescription>Check Your Terminal</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p> {ter_res}</p>
-                  </CardContent>
-                </Card> */}
-                <pre
-                  className="bg-black text-white rounded-lg"
-                  style={{ height: "600px", overflow: "auto" }}
-                >
-                  {ter_res.compile_output || " "}
-                  {"\n"}
-                  {ter_res.stdout || " "}
-                </pre>
+
+              {/* Terminal Tab */}
+              <TabsContent value="terminal" className="m-0">
+                <div className="bg-zinc-950 text-zinc-200 rounded-lg p-4 font-mono text-sm h-[calc(100vh-210px)] overflow-auto border border-zinc-800 space-y-4">
+                  {ter_res.description && (
+                    <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+                      <div>
+                        <span className="text-zinc-400 text-xs uppercase tracking-wider">Status: </span>
+                        <span className={`font-semibold ${
+                          ter_res.description === "Accepted" ? "text-emerald-400" : "text-red-400"
+                        }`}>
+                          {ter_res.description}
+                        </span>
+                      </div>
+                      {ter_res.time && (
+                        <span className="text-xs text-zinc-400">Time: {ter_res.time}s</span>
+                      )}
+                    </div>
+                  )}
+
+                  {ter_res.compile_output && (
+                    <div>
+                      <div className="text-red-400 font-semibold mb-1 text-xs uppercase tracking-wider">Compilation Output:</div>
+                      <pre className="p-3 bg-red-950/30 border border-red-900/50 rounded text-red-300 text-xs whitespace-pre-wrap">
+                        {ter_res.compile_output}
+                      </pre>
+                    </div>
+                  )}
+
+                  {ter_res.stderr && (
+                    <div>
+                      <div className="text-amber-400 font-semibold mb-1 text-xs uppercase tracking-wider">Error Details (stderr):</div>
+                      <pre className="p-3 bg-amber-950/30 border border-amber-900/50 rounded text-amber-300 text-xs whitespace-pre-wrap">
+                        {ter_res.stderr}
+                      </pre>
+                    </div>
+                  )}
+
+                  {ter_res.stdout && (
+                    <div>
+                      <div className="text-emerald-400 font-semibold mb-1 text-xs uppercase tracking-wider">Program Output (stdout):</div>
+                      <pre className="p-3 bg-zinc-900 border border-zinc-800 rounded text-zinc-100 text-xs whitespace-pre-wrap">
+                        {ter_res.stdout}
+                      </pre>
+                    </div>
+                  )}
+
+                  {!ter_res.compile_output && !ter_res.stderr && !ter_res.stdout && !ter_res.description && (
+                    <div className="flex flex-col items-center justify-center h-full text-zinc-500 py-20">
+                      <p className="text-base mb-2">No execution output yet</p>
+                      <p className="text-xs text-zinc-600">Click &quot;Run&quot; or &quot;Submit&quot; to compile and execute your code.</p>
+                    </div>
+                  )}
+                </div>
               </TabsContent>
             </Tabs>
           </div>

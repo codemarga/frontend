@@ -5,8 +5,8 @@ import GoogleProvider from "next-auth/providers/google";
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      clientId: process.env.AUTH_GOOGLE_ID || process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.AUTH_GOOGLE_SECRET || process.env.GOOGLE_CLIENT_SECRET || "",
     }),
   ],
   callbacks: {
@@ -15,7 +15,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
 
       try {
-        const apiUrl = "http://localhost:3000/api/signindj";
+        const baseUrl = process.env.NEXTAUTH_URL || process.env.AUTH_URL || "http://localhost:3000";
+        const apiUrl = `${baseUrl}/api/signindj`;
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
