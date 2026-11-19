@@ -15,7 +15,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
 
       try {
-        const baseUrl = process.env.NEXTAUTH_URL || process.env.AUTH_URL || "http://localhost:3000";
+        const baseUrl = process.env.NEXTAUTH_URL || process.env.AUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
         const apiUrl = `${baseUrl}/api/signindj`;
         const response = await fetch(apiUrl, {
             method: 'POST',
